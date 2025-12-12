@@ -6,7 +6,7 @@
   "magnetDatabase": "src/magnet.db",
   "language": "language.json",
   
-  // 🟢 சேர்க்கப்பட்ட வரி: சேனல் ஐடியை இங்கே உள்ளிடவும்.
+  // REQUIRED FOR CHANNEL CHECK LOGIC
   "requiredChannelId": "YOUR_CHANNEL_ID_HERE",
   
   "webhookOptions": {
