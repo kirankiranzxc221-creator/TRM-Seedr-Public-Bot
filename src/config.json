@@ -7,7 +7,7 @@
   "language": "language.json",
   
   // REQUIRED FOR CHANNEL CHECK LOGIC
-  "requiredChannelId": "YOUR_CHANNEL_ID_HERE",
+  "requiredChannelId": "-1003428309575",
   
   "webhookOptions": {
     "webhookHost": "https://seedr-trm.onrender.com",
