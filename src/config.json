@@ -1,0 +1,15 @@
+{
+  "botToken": "123",
+  "adminId": 1479433607,
+  "connectionType": "polling",
+  "database": "src/seedrBot.db",
+  "magnetDatabase": "src/magnet.db",
+  "language": "language.json",
+  "webhookOptions": {
+    "webhookHost": "https://seedr-trm.onrender.com",
+    "webhookPort": 443,
+    "sslCertificate": "cert.pem",
+    "sslPrivatekey": "key.pem",
+    "webhookListen": "0.0.0.0"
+  }
+}
