@@ -6,7 +6,6 @@
   "magnetDatabase": "src/magnet.db",
   "language": "language.json",
   
-  // REQUIRED FOR CHANNEL CHECK LOGIC
   "requiredChannelId": "-1003428309575",
   
   "webhookOptions": {
