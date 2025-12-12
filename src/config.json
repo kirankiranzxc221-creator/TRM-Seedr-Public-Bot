@@ -1,10 +1,14 @@
 {
-  "botToken": "123",
+  "botToken": "8415604278:AAGA2cL51AJZYcldQUjb1y5O3GG4S3qMXXs",
   "adminId": 1479433607,
   "connectionType": "polling",
   "database": "src/seedrBot.db",
   "magnetDatabase": "src/magnet.db",
   "language": "language.json",
+  
+  // 🟢 சேர்க்கப்பட்ட வரி: சேனல் ஐடியை இங்கே உள்ளிடவும்.
+  "requiredChannelId": "YOUR_CHANNEL_ID_HERE",
+  
   "webhookOptions": {
     "webhookHost": "https://seedr-trm.onrender.com",
     "webhookPort": 443,
