@@ -1,132 +1,121 @@
+import json
+import asyncio
+import requests, json
 from src.objs import *
-from src.commands.cancel import cancel
-from src.functions.floodControl import floodControl
-from src.functions.keyboard import cancelReplyKeyboard, mainReplyKeyboard, yesNoReplyKeyboard
+from src.commands.addTorrent import addTorrent
+from src.functions.keyboard import mainReplyKeyboard, githubAuthKeyboard
 
-# =========================================================
-# 🕵️ பிழை கண்டுபிடிக்கும் சேனல் லாக் (Debug Mode)
-# =========================================================
-def check_membership(message):
-    
-    # 👇 உங்கள் சேனல் ஐடியை இங்கே டைப் செய்யவும் (எ.கா: "-100...")
-    required_channel = "-100XXXXXXXXXX" 
 
-    try:
-        userId = message.from_user.id
-        chatId = message.chat.id
-        
-        # பாட் சேனலை செக் செய்கிறது
-        status = bot.get_chat_member(required_channel, userId).status
-        
-        # நீங்கள் மெம்பராக இருந்தால்:
-        if status in ['creator', 'administrator', 'member']:
-            return True
-        
-        # மெம்பர் இல்லை என்றால்:
-        else:
-            try:
-                invite_link = bot.export_chat_invite_link(required_channel)
-            except Exception as e:
-                # லிங்க் எடுக்க முடியாவிட்டால் எரரை காட்டு
-                bot.send_message(chatId, f"⚠️ Error getting link: {e}")
-                return False
-
-            markup = telebot.types.InlineKeyboardMarkup()
-            markup.add(telebot.types.InlineKeyboardButton(text="👉 Join Channel", url=invite_link))
-            
-            bot.send_message(
-                chatId, 
-                "🚨 **JOIN REQUIRED!**\n\nYou must join our channel first.", 
-                reply_markup=markup, 
-                parse_mode='Markdown'
-            )
-            return False
-
-    except Exception as e:
-        # 🛑 இங்கே தான் பிரச்சனை தெரியும்!
-        # எரர் வந்தால் அதை ஸ்கிரீனில் காட்டு:
-        bot.send_message(message.chat.id, f"❌ **SYSTEM ERROR:**\n\n{e}")
-        return False # எரர் வந்தால் உள்ளே விடாதே!
-
-# =========================================================
-
-@bot.message_handler(commands=['login'])
-def login(message, called=False, userLanguage=None):
-    
-    # 🛑 செக்கிங் நடக்கிறது
-    if not check_membership(message):
-        return
-    # --------------------------------
-
+# Start handler
+@bot.message_handler(commands=['start'])
+def start(message):
     userId = message.from_user.id
+    params = message.text.split()[1] if len(message.text.split()) > 1 else None
 
-    if floodControl(message, userLanguage):
-        userLanguage = userLanguage or dbSql.getSetting(userId, 'language')
+    userLanguage = dbSql.getSetting(userId, 'language')
 
-        if called:
-            bot.delete_message(message.message.chat.id, message.message.id)
+    if not params:
+        bot.send_message(message.chat.id, text=language['greet'][userLanguage], reply_markup=mainReplyKeyboard(userId, userLanguage))
 
-        sent = bot.send_message(message.from_user.id, language['enterEmail'][userLanguage], reply_markup=cancelReplyKeyboard(userLanguage))
+    #! If start paramater is passed
+    if params:
+        sent = bot.send_message(message.chat.id, text=language['processing'][userLanguage])
 
-        bot.register_next_step_handler(sent, login2, userLanguage)
+        #! If add torrent paramater is passed via database key
+        if params.startswith('addTorrent'):
+            hash = params.split('_')[1]
+            magnet = f"magnet:?xt=urn:btih:{hash}"
 
+            asyncio.run(addTorrent(message, userLanguage, magnet, messageId=sent.id))
 
-def login2(message, userLanguage):
-    if message.text == language['cancelBtn'][userLanguage]:
-        cancel(message, userLanguage)
+        #! If add torrent paramater is passed via URL
+        elif params.startswith('addTorrentURL'):
+            url = f'https://is.gd/{params[14:]}'
+            response = requests.get(url, allow_redirects=False)
+            magnetLink = response.headers['Location'] if 'Location' in response.headers else None
 
-    else:
-        email = message.text
+            asyncio.run(addTorrent(message, userLanguage, magnetLink, messageId=sent.id))
 
-        sent = bot.send_message(message.from_user.id, language['enterPassword'][userLanguage])
+        #! Github oauth
+        elif params.startswith('oauth'):
+            code = params[6:]
 
-        bot.register_next_step_handler(sent, login3, userLanguage, email)
+            params = {'client_id': 'ba5e2296f2bbe59f5097', 'client_secret': config['githubSecret'], 'code':code}
+            response = requests.get('https://github.com/login/oauth/access_token', params=params)
 
-def login3(message, userLanguage, email):
-    if message.text == language['cancelBtn'][userLanguage]:
-        cancel(message, userLanguage)
+            #! Successfully authenticated
+            if response.text[:13] == 'access_token=':
+                accessToken = response.text[13:].split('&', 1)[0]
 
-    else:
-        password = message.text
+                headers = {'Authorization': f'token {accessToken}'}
+                response = requests.get('https://api.github.com/user', headers=headers).json()
 
-        sent = bot.send_message(message.from_user.id, language['storePassword?'][userLanguage], reply_markup=yesNoReplyKeyboard(userLanguage))
-        bot.register_next_step_handler(sent, login4, userLanguage, email, password)
+                if 'login' in response:
+                    bot.edit_message_text(language['loggedInAs'][userLanguage].format(f"<a href='https://github.com/{response['login']}'>{response['login'].capitalize()}</a>"), chat_id=sent.chat.id, message_id=sent.id)
 
-def login4(message, userLanguage, email, password):
-    if message.text == language['cancelBtn'][userLanguage]:
-        cancel(message, userLanguage)
+                    following = requests.get(f"https://api.github.com/users/{response['login']}/following").json()
 
-    else:
-        storePassword = True if message.text == language['yesBtn'][userLanguage] else False
+                    #! User is following
+                    if any(dicT['login'] == 'hemantapkh' for dicT in following):
+                        dbSql.setSetting(userId, 'githubId', response['id'])
+                        bot.send_message(chat_id=message.chat.id, text=language['thanksGithub'][userLanguage])
 
-        seedr = Login(email, password)
-        response = seedr.authorize()
+                    #! User is not following
+                    else:
+                        bot.send_message(chat_id=message.chat.id, text=language['ghNotFollowed'][userLanguage], reply_markup=githubAuthKeyboard(userLanguage))
 
-        if seedr.token:
-            ac = Seedr(
-                    token = seedr.token,
-                    callbackFunc = lambda token: dbSql.updateAccount(
-                        token, message.from_user.id, ac['accountId']
-                    )
-            )
-            acSettings = ac.getSettings()
-
-            dbSql.setAccount(
-                userId=message.from_user.id,
-                accountId=acSettings['account']['user_id'],
-                userName=acSettings['account']['username'],
-                token=seedr.token,
-                isPremium=acSettings['account']['premium'],
-                invitesRemaining=acSettings['account']['invites'],
-                email=acSettings['account']['email'],
-                password=password if storePassword else None
-            )
-
-            bot.send_message(message.chat.id, language['loggedInAs'][userLanguage].format(acSettings['account']['username']), reply_markup=mainReplyKeyboard(message.from_user.id, userLanguage))
-
-        elif response['error'] == 'invalid_grant':
-            bot.send_message(message.chat.id, language['incorrectPassword'][userLanguage], reply_markup=mainReplyKeyboard(message.from_user.id, userLanguage))
+            #! Error
+            else:
+                bot.edit_message_text(language['processFailed'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
 
         else:
-            bot.send_message(message.chat.id, language['somethingWrong'][userLanguage], mainReplyKeyboard(message.from_user.id, userLanguage))
+            data = requests.get(f"https://hemantapokharel.com.np/seedr/getdata?key={config['databaseKey']}&id={params}")
+            data = json.loads(data.content)
+
+            if data['status'] == 'success':
+                data = json.loads(data['data'])
+
+                login(sent, userLanguage, data)
+
+            else:
+                bot.edit_message_text(language['processFailed'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
+
+
+#: Account login
+def login(sent, userLanguage, data):
+    userId = sent.chat.id
+    ac = dbSql.getDefaultAc(userId)
+
+    if ac and ac['password']:
+        data = {
+            'username': ac['email'] or ac['userName'],
+            'password': ac['password'],
+            'rememberme': 'on',
+            'g-recaptcha-response': data['captchaResponse'],
+            'h-captcha-response': data['captchaResponse']
+        }
+
+        response = requests.post('https://www.seedr.cc/auth/login', data=data)
+
+        cookies = requests.utils.dict_from_cookiejar(response.cookies)
+        response = response.json()
+
+        #! If account logged in successfully
+        if cookies:
+            dbSql.updateAcColumn(userId, response['user_id'], 'cookie', json.dumps(cookies))
+            bot.delete_message(sent.chat.id, sent.id)
+            bot.send_message(chat_id=sent.chat.id, text=language['loggedInAs'][userLanguage].format(response['username']), reply_markup=mainReplyKeyboard(userId, userLanguage))
+
+        else:
+            #! Captcha failed
+            if response['reason_phrase'] in ['RECAPTCHA_UNSOLVED', 'RECAPTCHA_FAILED']:
+                bot.edit_message_text(language['captchaFailled'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
+
+            #! Wrong username or password
+            elif response['reason_phrase'] == 'INCORRECT_PASSWORD':
+                bot.edit_message_text(language['incorrectDbPassword'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
+
+            #! Unknown error
+            else:
+                bot.edit_message_text(language['unknownError'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
 
