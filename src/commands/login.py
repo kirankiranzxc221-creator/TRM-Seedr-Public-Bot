@@ -9,7 +9,7 @@ from src.functions.keyboard import cancelReplyKeyboard, mainReplyKeyboard, yesNo
 def check_membership(message):
     
     # 👇👇👇 உங்கள் சேனல் ஐடியை இங்கே மாற்றவும்! (எ.கா: "-10012345678")
-    required_channel = "-100xxxxxxxxxxxxx" 
+    required_channel = "-1003428309575" 
     # 👆👆👆 இந்த இடத்தில் உங்கள் ஐடியை சரியாகப் போடவும் (Quotes குள்ளே)
 
     try:
