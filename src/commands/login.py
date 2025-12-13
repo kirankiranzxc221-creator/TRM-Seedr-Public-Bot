@@ -4,58 +4,56 @@ from src.functions.floodControl import floodControl
 from src.functions.keyboard import cancelReplyKeyboard, mainReplyKeyboard, yesNoReplyKeyboard
 
 # =========================================================
-# 🔒 100% வேலை செய்யும் சேனல் லாக் (Direct ID)
+# 🕵️ பிழை கண்டுபிடிக்கும் சேனல் லாக் (Debug Mode)
 # =========================================================
 def check_membership(message):
     
-    # 👇👇👇 உங்கள் சேனல் ஐடியை இங்கே மாற்றவும்! (எ.கா: "-10012345678")
-    required_channel = "-1003428309575" 
-    # 👆👆👆 இந்த இடத்தில் உங்கள் ஐடியை சரியாகப் போடவும் (Quotes குள்ளே)
+    # 👇 உங்கள் சேனல் ஐடியை இங்கே டைப் செய்யவும் (எ.கா: "-100...")
+    required_channel = "-100XXXXXXXXXX" 
 
     try:
         userId = message.from_user.id
         chatId = message.chat.id
         
-        # பயனர் சேனலில் உள்ளாரா எனப் பார்க்கிறது
+        # பாட் சேனலை செக் செய்கிறது
         status = bot.get_chat_member(required_channel, userId).status
         
-        # மெம்பர், அட்மின், ஓனர் என்றால் அனுமதி
+        # நீங்கள் மெம்பராக இருந்தால்:
         if status in ['creator', 'administrator', 'member']:
             return True
         
-        # இல்லை என்றால் லாக் போடு
+        # மெம்பர் இல்லை என்றால்:
         else:
             try:
                 invite_link = bot.export_chat_invite_link(required_channel)
-            except:
-                # பாட் அட்மின் இல்லை என்றால் லிங்க் வராது
-                invite_link = "https://t.me/YourChannelUser" 
-            
+            except Exception as e:
+                # லிங்க் எடுக்க முடியாவிட்டால் எரரை காட்டு
+                bot.send_message(chatId, f"⚠️ Error getting link: {e}")
+                return False
+
             markup = telebot.types.InlineKeyboardMarkup()
-            markup.add(telebot.types.InlineKeyboardButton(text="👉 Join Our Channel! 👈", url=invite_link))
+            markup.add(telebot.types.InlineKeyboardButton(text="👉 Join Channel", url=invite_link))
             
             bot.send_message(
                 chatId, 
-                "🚨 **ACCESS DENIED!**\n\nTo use this bot, you must first **Join our Channel**.\n\n👇 Click the button below to join, then try /login again.", 
+                "🚨 **JOIN REQUIRED!**\n\nYou must join our channel first.", 
                 reply_markup=markup, 
                 parse_mode='Markdown'
             )
             return False
 
     except Exception as e:
-        # ஐடி தப்பு அல்லது பாட் அட்மின் இல்லை என்றால் இந்த எரர் வரும்
-        print(f"❌ Channel Check Error: {e}")
-        bot.send_message(message.chat.id, f"⚠️ Error in Channel Check: {e}")
-        return True # எரர் வந்தால் யூசரைத் தடுக்க வேண்டாம் (தற்காலிகமாக)
+        # 🛑 இங்கே தான் பிரச்சனை தெரியும்!
+        # எரர் வந்தால் அதை ஸ்கிரீனில் காட்டு:
+        bot.send_message(message.chat.id, f"❌ **SYSTEM ERROR:**\n\n{e}")
+        return False # எரர் வந்தால் உள்ளே விடாதே!
 
 # =========================================================
 
-
-#: Login or signup seedr account
 @bot.message_handler(commands=['login'])
 def login(message, called=False, userLanguage=None):
     
-    # 🛑 லாக்: இங்கே செக் செய்கிறோம்
+    # 🛑 செக்கிங் நடக்கிறது
     if not check_membership(message):
         return
     # --------------------------------
@@ -131,3 +129,4 @@ def login4(message, userLanguage, email, password):
 
         else:
             bot.send_message(message.chat.id, language['somethingWrong'][userLanguage], mainReplyKeyboard(message.from_user.id, userLanguage))
+
