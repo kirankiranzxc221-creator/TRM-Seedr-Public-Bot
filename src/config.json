@@ -6,8 +6,6 @@
   "magnetDatabase": "src/magnet.db",
   "language": "language.json",
   
-  "requiredChannelId": "-1003428309575",
-  
   "webhookOptions": {
     "webhookHost": "https://seedr-trm.onrender.com",
     "webhookPort": 443,
