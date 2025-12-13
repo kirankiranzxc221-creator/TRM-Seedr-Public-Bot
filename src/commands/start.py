@@ -1,15 +1,81 @@
 import json
 import asyncio
-import requests, json
+import requests
+import telebot # டெலிகிராம் டைப்ஸுக்காக இதைச் சேர்த்துள்ளேன்
 from src.objs import *
 from src.commands.addTorrent import addTorrent
 from src.functions.keyboard import mainReplyKeyboard, githubAuthKeyboard
 
+# 👇👇👇 உங்கள் சேனல் ஐடியை இங்கே போடவும் 👇👇👇
+REQUIRED_CHANNEL = "-1003428309575" 
+# 👆👆👆 (எ.கா: "-1001234567890")
 
-# Start handler
+# ==========================================
+# 🔒 சேனல் செக் லாஜிக் (புதிதாகச் சேர்க்கப்பட்டது)
+# ==========================================
+def get_join_status(user_id):
+    try:
+        # சேனல் ஐடி போடவில்லை என்றால் செக்கிங் வேண்டாம்
+        if REQUIRED_CHANNEL == "-100XXXXXXXXXX":
+            return True 
+
+        # சேனலில் யூசர் உள்ளாரா என பார்க்கிறது
+        status = bot.get_chat_member(REQUIRED_CHANNEL, user_id).status
+        if status in ['creator', 'administrator', 'member']:
+            return True
+        return False
+    except Exception as e:
+        print(f"Channel Check Error: {e}")
+        return True # எரர் வந்தால் யூசரைத் தடுக்க வேண்டாம்
+
+def send_force_subscribe(chat_id, user_id):
+    try:
+        invite_link = bot.export_chat_invite_link(REQUIRED_CHANNEL)
+    except:
+        invite_link = "https://t.me/" 
+    
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton(text="👉 Join Our Channel 👈", url=invite_link))
+    markup.add(telebot.types.InlineKeyboardButton(text="✅ I Joined (Click Here)", callback_data="check_join_status"))
+    
+    bot.send_message(
+        chat_id,
+        "⚠️ **Access Denied!**\n\nTo use this bot, you must join our official channel first.\n\n1. Join the channel.\n2. Come back and click **'I Joined'**.",
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
+
+# "I Joined" பட்டனுக்கான ஹேண்ட்லர்
+@bot.callback_query_handler(func=lambda call: call.data == "check_join_status")
+def check_join_btn(call):
+    user_id = call.from_user.id
+    chat_id = call.message.chat.id
+    
+    # பட்டன் அழுத்தியதும் மீண்டும் செக் பண்ணும்
+    if get_join_status(user_id):
+        bot.delete_message(chat_id, call.message.message_id)
+        bot.answer_callback_query(call.id, "✅ Verified!")
+        
+        # வெல்கம் மெசேஜ் அனுப்புதல்
+        userLanguage = dbSql.getSetting(user_id, 'language')
+        bot.send_message(chat_id, text=language['greet'][userLanguage], reply_markup=mainReplyKeyboard(user_id, userLanguage))
+    else:
+        bot.answer_callback_query(call.id, "❌ You haven't joined yet!", show_alert=True)
+
+# ==========================================
+# ▶️ ஒரிஜினல் START கமாண்ட் (மாற்றியமைக்கப்பட்டது)
+# ==========================================
 @bot.message_handler(commands=['start'])
 def start(message):
     userId = message.from_user.id
+    
+    # 🛑 இங்கே தான் லாக் போடுகிறோம்!
+    if not get_join_status(userId):
+        send_force_subscribe(message.chat.id, userId)
+        return # சேனலில் இல்லை என்றால் இங்கேயே நின்றுவிடும்
+    # --------------------------------------------------
+
+    # 👇 கீழே உள்ளது அனைத்தும் உங்கள் ஒரிஜினல் கோடிங் (தொடப்படல) 👇
     params = message.text.split()[1] if len(message.text.split()) > 1 else None
 
     userLanguage = dbSql.getSetting(userId, 'language')
@@ -118,3 +184,4 @@ def login(sent, userLanguage, data):
             #! Unknown error
             else:
                 bot.edit_message_text(language['unknownError'][userLanguage], chat_id=sent.chat.id, message_id=sent.id)
+
