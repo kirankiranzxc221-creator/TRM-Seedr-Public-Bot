@@ -10,6 +10,7 @@ def files(message, userLanguage=None):
     userLanguage = userLanguage or dbSql.getSetting(userId, 'language')
 
     if floodControl(message, userLanguage):
+        # 🟢 User Logic: Admin ID செக் செய்யாமல், மெசேஜ் அனுப்பும் யூசரின் ID-யை வைத்து அக்கவுண்ட் எடுக்கப்படுகிறது.
         ac = dbSql.getDefaultAc(userId)
 
         #! If user has an account
@@ -24,22 +25,51 @@ def files(message, userLanguage=None):
             response = account.listContents()
 
             if 'error' not in response:
-                #! If user has files
-                if response['folders']:
-                    text = ''
+                text = ''
+                has_content = False
 
+                #! If user has folders
+                if response['folders']:
+                    has_content = True
                     for i in response['folders']:
                         text += f"<b>📂 {i['fullname']}</b>\n\n💾 {convertSize(i['size'])}B, ⏰ {i['last_update']}"
                         text += f"\n\n{language['files'][userLanguage]} /getFiles_{i['id']}\n{language['link'][userLanguage]} /getLink_{i['id']}\n{language['delete'][userLanguage]} /delete_{i['id']}\n\n"
 
+                #! Root files
+                if response.get('files'):
+                    has_content = True
+                    for f in response['files']:
+                        text += f"<b>📄 {f['name']}</b>\n\n💾 {convertSize(f['size'])}B, ⏰ {f['last_update']}"
+                        text += f"\n\n{language['link'][userLanguage]} /fileLink_{f['folder_file_id']}\n{language['delete'][userLanguage]} /deleteFile_{f['folder_file_id']}\n\n"
+                
+                #! If user has files or folders, send the list and the Delete All button
+                if has_content:
+                    # Send the file list first
                     bot.send_message(message.chat.id, text[:4000])
 
+                    # --- Delete All Button Section ---
+                    delete_all_markup = telebot.types.InlineKeyboardMarkup()
+                    delete_all_btn = telebot.types.InlineKeyboardButton(
+                        text='⚠️ DELETE ALL FILES', 
+                        callback_data='deleteAllConfirm' 
+                    )
+                    delete_all_markup.add(delete_all_btn)
+                    
+                    bot.send_message(
+                        message.chat.id, 
+                        "--- File Operations ---",
+                        reply_markup=delete_all_markup
+                    )
+                    # ---------------------------------
+                
                 #! If user has no files
                 else:
                     bot.send_message(message.chat.id, language['noFiles'][userLanguage])
-            else:
-                exceptions(message, response, ac, userLanguage)
 
-        #! If no accounts
+            else:
+                exceptions(message, response, ac, userLanguage, called=False) 
+
+        #! If no accounts (User hasn't logged in)
         else:
             noAccount(message, userLanguage)
+
