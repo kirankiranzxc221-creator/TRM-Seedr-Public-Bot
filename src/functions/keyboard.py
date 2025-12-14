@@ -1,6 +1,5 @@
 from src.objs import *
 
-
 #: Main reply keyboard
 def mainReplyKeyboard(userId, userLanguage):
     keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -11,26 +10,24 @@ def mainReplyKeyboard(userId, userLanguage):
     button4 = telebot.types.KeyboardButton(text=language['accountBtn'][userLanguage])
     button5 = telebot.types.KeyboardButton(text=language['settingsBtn'][userLanguage])
     button6 = telebot.types.KeyboardButton(text=language['helpBtn'][userLanguage])
-    button7 = telebot.types.KeyboardButton(text=language['supportBtn'][userLanguage])
+    # button7 (Support) நீக்கப்பட்டது
     button9 = telebot.types.KeyboardButton(text=language['addAccountBtn'][userLanguage])
     button10 = telebot.types.KeyboardButton(text=language['switchBtn'][userLanguage])
-    button11 = telebot.types.KeyboardButton(text='🆓 Get free space')
+    # button11 (Free Space) நீக்கப்பட்டது
 
     account = dbSql.getAccounts(userId)
 
     #! If user has no account
     if not account:
         keyboard.row(button9)
-        #keyboard.row(button5, button6, button7)
+        #keyboard.row(button5, button6) 
 
     else:
+        # லாகின் செய்த யூசர்களுக்கு வரும் பட்டன்கள்
         keyboard.row(button1, button2)
         keyboard.row(button10, button3, button4) if len(account) > 1 else keyboard.row(button3, button4)
-
-        if dbSql.getSetting(userId, 'githubId') == '0':
-            keyboard.row(button11, button7)
-        else:
-            keyboard.row(button7)
+        
+        # Free Space மற்றும் Support பட்டன் லாஜிக் இங்கிருந்து நீக்கப்பட்டது.
 
     return keyboard
 
