@@ -10,7 +10,7 @@ def files(message, userLanguage=None):
     userLanguage = userLanguage or dbSql.getSetting(userId, 'language')
 
     if floodControl(message, userLanguage):
-        # 🟢 User Logic: Admin ID செக் செய்யாமல், மெசேஜ் அனுப்பும் யூசரின் ID-யை வைத்து அக்கவுண்ட் எடுக்கப்படுகிறது.
+        # 🟢 User Logic: அட்மின் ஐடி இல்லாமல், யூசரின் ஐடியை வைத்து அக்கவுண்ட் எடுக்கப்படுகிறது.
         ac = dbSql.getDefaultAc(userId)
 
         #! If user has an account
@@ -42,8 +42,11 @@ def files(message, userLanguage=None):
                         text += f"<b>📄 {f['name']}</b>\n\n💾 {convertSize(f['size'])}B, ⏰ {f['last_update']}"
                         text += f"\n\n{language['link'][userLanguage]} /fileLink_{f['folder_file_id']}\n{language['delete'][userLanguage]} /deleteFile_{f['folder_file_id']}\n\n"
                 
-                #! If user has files or folders, send the list and the Delete All button
+                #! If user has files or folders
                 if has_content:
+                    # 🟢 உங்கள் பாட் பெயர் (Branding) இங்கே சேர்க்கப்பட்டுள்ளது
+                    text += f"\n🔥 via @TRM_All_Bot"
+
                     # Send the file list first
                     bot.send_message(message.chat.id, text[:4000])
 
