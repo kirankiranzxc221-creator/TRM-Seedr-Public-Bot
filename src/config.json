@@ -7,7 +7,7 @@
   "language": "language.json",
   
   "webhookOptions": {
-    "webhookHost": "https://seedr-trm.onrender.com",
+    "webhookHost": "https://trm-seedr-public-bot.onrender.com",
     "webhookPort": 443,
     "sslCertificate": "cert.pem",
     "sslPrivatekey": "key.pem",
