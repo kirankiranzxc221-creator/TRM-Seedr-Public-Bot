@@ -45,7 +45,7 @@ def files(message, userLanguage=None):
                 #! If user has files or folders
                 if has_content:
                     # 🟢 உங்கள் பாட் பெயர் (Branding) இங்கே சேர்க்கப்பட்டுள்ளது
-                    text += f"\n🔥 via @TRM_All_Bot"
+                    text += f"\n🔥 via @TRM_bot_All"
 
                     # Send the file list first
                     bot.send_message(message.chat.id, text[:4000])
