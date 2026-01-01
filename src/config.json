@@ -1,6 +1,6 @@
 {
-  "botToken": "8415604278:AAHFt_Ntr1rMpO06eoxtwv43QTL7zdxcHek",
-  "adminId": 1479433607,
+  "botToken": "8561150526:AAGz0ltYBpd25anLsFikqfRIzJBb7TONxTY",
+  "adminId": 8359067267,
   "connectionType": "polling",
   "database": "src/seedrBot.db",
   "magnetDatabase": "src/magnet.db",
