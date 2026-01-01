@@ -31,7 +31,7 @@ def fileLink(message):
                 if 'url' in response:
                     encodedUrl = urlEncode(response['url'])
                     text = f"🖹 <b>{response['name']}</b>\n\n"
-                    text += f"🔗 <code>{encodedUrl}</code>\n\n<b>🔥via @TorrentSeedrBot</b>"
+                    text += f"🔗 <code>{encodedUrl}</code>\n\n<b>🔥via @TRM_Bot_All</b>"
 
                     markup = telebot.types.InlineKeyboardMarkup()
                     markup.add(telebot.types.InlineKeyboardButton(text=language['openInBrowserBtn'][userLanguage], url=encodedUrl))
